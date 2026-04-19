@@ -41,3 +41,14 @@ python /home/ubuntu/skills/superskill-biblical-collaboration/scripts/orchestrate
 
 - For detailed workflow integration across skills, see [references/workflow_integration.md](references/workflow_integration.md).
 - For the points sharing algorithm and Biblical principles mapping, see [references/points_system.md](references/points_system.md).
+
+## Advanced Authentication
+
+This skill uses advanced GitHub authentication with:
+- JWT Token Management
+- Encrypted Secret Vault
+- GitHub App Integration
+- Permission Scoping
+- Audit Logging
+
+See ADVANCED_AUTH_GUIDE.md for details.
