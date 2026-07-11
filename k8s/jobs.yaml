@@ -1,0 +1,103 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: superskill-scheduled-task
+  namespace: superskill
+spec:
+  schedule: "0 2 * * *"  # Run daily at 2 AM UTC
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: superskill
+            job-type: scheduled
+        spec:
+          serviceAccountName: superskill-sa
+          restartPolicy: OnFailure
+          containers:
+          - name: superskill-job
+            image: moerka/superskill-biblical-collaboration:1.0.0
+            envFrom:
+            - configMapRef:
+                name: superskill-config
+            - secretRef:
+                name: superskill-secrets
+                optional: true
+            volumeMounts:
+            - name: data-volume
+              mountPath: /app/data
+            - name: logs-volume
+              mountPath: /app/logs
+            resources:
+              requests:
+                cpu: 500m
+                memory: 512Mi
+              limits:
+                cpu: 1000m
+                memory: 1Gi
+          volumes:
+          - name: data-volume
+            persistentVolumeClaim:
+              claimName: superskill-data-pvc
+          - name: logs-volume
+            emptyDir: {}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: superskill-ondemand-job
+  namespace: superskill
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: superskill
+        job-type: ondemand
+    spec:
+      serviceAccountName: superskill-sa
+      restartPolicy: OnFailure
+      containers:
+      - name: superskill-job
+        image: moerka/superskill-biblical-collaboration:1.0.0
+        args:
+        - "python"
+        - "-m"
+        - "scripts.orchestrate_collaboration"
+        - "--task"
+        - "$(TASK_DESCRIPTION)"
+        envFrom:
+        - configMapRef:
+            name: superskill-config
+        - secretRef:
+            name: superskill-secrets
+            optional: true
+        env:
+        - name: TASK_DESCRIPTION
+          value: "Default task execution"
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        - name: output-volume
+          mountPath: /app/output
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: superskill-data-pvc
+      - name: logs-volume
+        emptyDir: {}
+      - name: output-volume
+        emptyDir: {}
